@@ -11,12 +11,14 @@ import (
 
 const (
 	codeMirror = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/"
+	p5         = "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/"
 )
 
 var downloads = map[string]string{
 	codeMirror + "codemirror.min.css":                "www/codemirror.min.css",
 	codeMirror + "codemirror.min.js":                 "www/codemirror.min.js",
 	codeMirror + "mode/javascript/javascript.min.js": "www/javascript.min.js",
+	p5 + "p5.min.js":                                 "www/p5.min.js",
 }
 
 func main() {

@@ -21,4 +21,4 @@
 go.work
 
 www/codemirror*
-www/javascript.min.js
+www/*.min.js
