@@ -73,6 +73,13 @@ func (s *server) getPreview(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "SERVER ERROR")
 		return
 	}
+	if strings.HasSuffix(r.RequestURI, ".js") {
+		contentType := "text/javascript"
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(code))
+		return
+	}
 	if err := s.appHtml.ExecuteTemplate(w, "app.html", struct {
 		Code string
 	}{

@@ -21,6 +21,7 @@ function save() {
     console.log("Saving");
     update().then((resp) => {
         console.log("Saved", resp);
+        document.getElementById("previewFrame").contentWindow.location.reload();
     });
 }
 
