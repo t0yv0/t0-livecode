@@ -1,0 +1,13 @@
+body {
+    font-size: 150%;
+}
+
+.float-child {
+    width: 48%;
+    float: left;
+}
+
+iframe {
+    width: 100%;
+    border: none;
+}
