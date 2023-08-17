@@ -23,9 +23,8 @@ type server struct {
 }
 
 func (s *server) getRoot(w http.ResponseWriter, r *http.Request) {
-	s.indexHtml.ExecuteTemplate(w, "index.html", struct{ CurrentProgram string }{
-		CurrentProgram: string(s.codeRepo.Default()),
-	})
+	w.Header().Add("Location", "/p/"+string(s.codeRepo.Default()))
+	w.WriteHeader(http.StatusMovedPermanently)
 }
 
 func (s *server) getW3(w http.ResponseWriter, r *http.Request) {
@@ -52,13 +51,29 @@ func (s *server) fail(w http.ResponseWriter, err error) {
 	log.Println(err)
 }
 
+func (s *server) pHandler(w http.ResponseWriter, r *http.Request) {
+	pid, err := s.parsePID(r)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	if _, err := s.codeRepo.Load(pid); err != nil {
+		if err := s.codeRepo.Store(pid, starterCode); err != nil {
+			s.fail(w, err)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+	s.indexHtml.ExecuteTemplate(w, "index.html", struct{ CurrentProgram string }{
+		CurrentProgram: string(pid),
+	})
+}
+
 func (s *server) programHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch {
 	case r.Method == http.MethodPost:
 		err = s.programUpdate(w, r)
-	// case r.RequestURI == "/program/":
-	// 	panic("!")
 	case strings.HasSuffix(r.RequestURI, ".js"):
 		err = s.programScript(w, r)
 	default:
@@ -114,7 +129,7 @@ func (s *server) programUpdate(w http.ResponseWriter, r *http.Request) error {
 
 func (*server) parsePID(r *http.Request) (Pid, error) {
 	parts := strings.Split(r.RequestURI, "/")
-	if len(parts) < 3 || parts[1] != "program" {
+	if len(parts) < 3 || (parts[1] != "program" && parts[1] != "p") {
 		return "", fmt.Errorf("Parsing PID failed: invalid URI %q", r.RequestURI)
 	}
 	return ParsePid(parts[2])
@@ -144,6 +159,7 @@ func main() {
 	}
 	http.HandleFunc("/www/", s.getW3)
 	http.HandleFunc("/program/", s.programHandler)
+	http.HandleFunc("/p/", s.pHandler)
 	http.HandleFunc("/", s.getRoot)
 	if err := http.ListenAndServe(":3333", nil); err != nil {
 		log.Fatal(err)
