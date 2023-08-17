@@ -1,28 +1,40 @@
-var myCodeMirror = CodeMirror(document.getElementById("editor"), {
-  value: "function myScript(){return 100;}\n",
-  mode:  "javascript"
-});
+function livecode(prog) {
+    var cm = CodeMirror(document.getElementById("editor"), {mode: "javascript"});
+    cm.setSize(null /*retain width*/, window.innerHeight-50);
+    document.getElementById("previewFrame").style.height = (window.innerHeight-50) + "px";
+    document.getElementById("previewFrame").src = "/program/"+prog+"/";
 
-myCodeMirror.setSize(null /*retain width*/, window.innerHeight-50);
-document.getElementById("previewFrame").style.height = (window.innerHeight-50) + "px";
+    async function fetchSource() {
+        const response = await fetch("/program/"+prog+"/script.js", {
+            method: "GET",
+            mode: "same-origin",
+            cache: "no-cache",
+        });
+        return response.text();
+    }
 
-async function update() {
-    const response = await fetch("/update/", {
-        method: "POST",
-        mode: "same-origin",
-        cache: "no-cache",
-        headers: {"Content-Type": "text/plain"},
-        body: myCodeMirror.getValue(),
+    fetchSource().then(fetched => {
+        cm.setValue(fetched);
     });
-    return response.json();
-}
 
-function save() {
-    console.log("Saving");
-    update().then((resp) => {
-        console.log("Saved", resp);
-        document.getElementById("previewFrame").contentWindow.location.reload();
-    });
-}
+    async function update() {
+        const response = await fetch("/program/"+prog, {
+            method: "POST",
+            mode: "same-origin",
+            cache: "no-cache",
+            headers: {"Content-Type": "text/plain"},
+            body: cm.getValue(),
+        });
+        return response.json();
+    }
 
-CodeMirror.keyMap.default['Ctrl-S'] = save;
+    function save() {
+        console.log("Saving", prog);
+        update().then((resp) => {
+            console.log("Saved", prog);
+            document.getElementById("previewFrame").contentWindow.location.reload();
+        });
+    }
+
+    CodeMirror.keyMap["default"]["Ctrl-S"] = save;
+}

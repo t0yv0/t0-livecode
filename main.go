@@ -16,11 +16,6 @@ import (
 //go:embed www/*.js
 var www embed.FS
 
-type codeRepo interface {
-	Store(id, code string) error
-	Load(id string) (string, error)
-}
-
 type server struct {
 	indexHtml *template.Template
 	appHtml   *template.Template
@@ -28,7 +23,9 @@ type server struct {
 }
 
 func (s *server) getRoot(w http.ResponseWriter, r *http.Request) {
-	s.indexHtml.ExecuteTemplate(w, "index.html", struct{}{})
+	s.indexHtml.ExecuteTemplate(w, "index.html", struct{ CurrentProgram string }{
+		CurrentProgram: string(s.codeRepo.Default()),
+	})
 }
 
 func (s *server) getW3(w http.ResponseWriter, r *http.Request) {
@@ -49,62 +46,78 @@ func (s *server) getW3(w http.ResponseWriter, r *http.Request) {
 	w.Write(file)
 }
 
-func (s *server) postUpdate(w http.ResponseWriter, r *http.Request) {
+func (s *server) fail(w http.ResponseWriter, err error) {
+	w.WriteHeader(500)
+	fmt.Fprintf(w, "SERVER ERROR")
+	log.Println(err)
+}
+
+func (s *server) programHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	switch {
+	case r.Method == http.MethodPost:
+		err = s.programUpdate(w, r)
+	// case r.RequestURI == "/program/":
+	// 	panic("!")
+	case strings.HasSuffix(r.RequestURI, ".js"):
+		err = s.programScript(w, r)
+	default:
+		err = s.programPage(w, r)
+	}
+	if err != nil {
+		s.fail(w, err)
+	}
+}
+
+func (s *server) programPage(w http.ResponseWriter, r *http.Request) error {
+	pid, err := s.parsePID(r)
+	if err != nil {
+		return err
+	}
+	return s.appHtml.ExecuteTemplate(w, "app.html",
+		struct{ Pid Pid }{Pid: pid})
+}
+
+func (s *server) programScript(w http.ResponseWriter, r *http.Request) error {
+	pid, err := s.parsePID(r)
+	if err != nil {
+		return err
+	}
+	code, err := s.codeRepo.Load(pid)
+	if err != nil {
+		return err
+	}
+	contentType := "text/javascript"
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(code))
+	return nil
+}
+
+func (s *server) programUpdate(w http.ResponseWriter, r *http.Request) error {
+	pid, err := s.parsePID(r)
+	if err != nil {
+		return err
+	}
 	code, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "SERVER ERROR")
-		return
+		return err
 	}
-	if err := s.codeRepo.Store("thecode", string(code)); err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "SERVER ERROR")
-		return
+	if err := s.codeRepo.Store(pid, string(code)); err != nil {
+		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status": "OK"}`))
-}
-
-func (s *server) getPreview(w http.ResponseWriter, r *http.Request) {
-	code, err := s.codeRepo.Load("thecode")
-	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "SERVER ERROR")
-		return
-	}
-	if strings.HasSuffix(r.RequestURI, ".js") {
-		contentType := "text/javascript"
-		w.Header().Set("Content-Type", contentType)
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(code))
-		return
-	}
-	if err := s.appHtml.ExecuteTemplate(w, "app.html", struct {
-		Code string
-	}{
-		Code: code,
-	}); err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "SERVER ERROR")
-		return
-	}
-}
-
-type inMemCodeStore struct {
-	codes map[string]string
-}
-
-func (i *inMemCodeStore) Load(id string) (string, error) {
-	if c, ok := i.codes[id]; ok {
-		return c, nil
-	}
-	return "", fmt.Errorf("NOT FOUND")
-}
-
-func (i *inMemCodeStore) Store(id, code string) error {
-	i.codes[id] = code
 	return nil
+}
+
+func (*server) parsePID(r *http.Request) (Pid, error) {
+	parts := strings.Split(r.RequestURI, "/")
+	if len(parts) < 3 || parts[1] != "program" {
+		return "", fmt.Errorf("Parsing PID failed: invalid URI %q", r.RequestURI)
+	}
+	return ParsePid(parts[2])
 }
 
 func main() {
@@ -127,15 +140,10 @@ func main() {
 	s := &server{
 		indexHtml: t,
 		appHtml:   t1,
-		codeRepo: &inMemCodeStore{
-			codes: map[string]string{
-				"thecode": "// TODO",
-			},
-		},
+		codeRepo:  newInMemCodeStore(),
 	}
 	http.HandleFunc("/www/", s.getW3)
-	http.HandleFunc("/preview/", s.getPreview)
-	http.HandleFunc("/update/", s.postUpdate)
+	http.HandleFunc("/program/", s.programHandler)
 	http.HandleFunc("/", s.getRoot)
 	if err := http.ListenAndServe(":3333", nil); err != nil {
 		log.Fatal(err)
