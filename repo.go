@@ -48,8 +48,7 @@ func (i *inMemCodeStore) Store(id Pid, code string) error {
 	return nil
 }
 
-const starterCode = `
-function setup() {
+const starterCode = `function setup() {
   createCanvas(400, 400);
 }
 
