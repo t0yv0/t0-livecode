@@ -23,3 +23,4 @@ go.work
 www/codemirror*
 www/*.min.js
 t0-livecode
+data

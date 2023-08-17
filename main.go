@@ -3,6 +3,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -136,6 +137,8 @@ func (*server) parsePID(r *http.Request) (Pid, error) {
 }
 
 func main() {
+	dataDir := flag.String("datadir", "data", "Directory to store data in")
+	flag.Parse()
 	f, err := www.ReadFile("www/index.html")
 	if err != nil {
 		log.Fatal(err)
@@ -152,10 +155,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	dirStore, err := newDirStore(*dataDir)
+	if err != nil {
+		log.Fatal(err)
+	}
 	s := &server{
 		indexHtml: t,
 		appHtml:   t1,
-		codeRepo:  newInMemCodeStore(),
+		codeRepo:  dirStore,
 	}
 	http.HandleFunc("/www/", s.getW3)
 	http.HandleFunc("/program/", s.programHandler)
