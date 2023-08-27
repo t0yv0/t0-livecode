@@ -75,10 +75,10 @@
               options = {
                 services.t0-livecode = {
                   enable = mkEnableOption "t0-livecode";
-                  environment-file = mkOption {
-                    description = "Root-readable env file, can store secrets";
-                    example = "/etc/t0-livecode.conf";
-                  };
+                  # environment-file = mkOption {
+                  #   description = "Root-readable env file, can store secrets";
+                  #   example = "/etc/t0-livecode.conf";
+                  # };
                 };
               };
               config = mkIf cfg.enable {
@@ -93,7 +93,7 @@
                     ExecStart = "${p}/bin/t0-livecode";
                     ProtectSystem = "strict";
                     ProtectHome = true;
-                    EnvironmentFile = cfg.environment-file;
+                    # EnvironmentFile = cfg.environment-file;
                   };
                 };
               };
