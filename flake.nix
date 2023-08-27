@@ -73,7 +73,7 @@
             {
               imports = [];
               options = {
-                servies.t0-livecode = {
+                services.t0-livecode = {
                   enable = mkEnableOption "t0-livecode";
                   environment-file = mkOption {
                     description = "Root-readable env file, can store secrets";
