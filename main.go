@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -138,6 +139,9 @@ func (*server) parsePID(r *http.Request) (Pid, error) {
 
 func main() {
 	dataDir := flag.String("datadir", "data", "Directory to store data in")
+	if d, ok := os.LookupEnv("STATE_DIRECTORY"); ok {
+		*dataDir = d
+	}
 	flag.Parse()
 	f, err := www.ReadFile("www/index.html")
 	if err != nil {
