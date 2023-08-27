@@ -8,14 +8,51 @@
   outputs = { self, nixpkgs }:
     let
       ver = "0.0.1";
+      p5 = "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/";
+      codeMirror = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7";
+
+      cmCSS = builtins.fetchurl {
+        url = "${codeMirror}/codemirror.min.css";
+        sha256 = "1i2zr35sihmfw9sp832p1bqa5m67cliwd18hwjgx4mb9mc9721qi";
+      };
+
+      cmJS = builtins.fetchurl {
+        url = "${codeMirror}/codemirror.min.js";
+        sha256 = "1in7flnhkaarq9qqihyc8bxz5ynvdrgfzmn4cgivj41f3v78k1j5";
+      };
+
+      cmModeJS = builtins.fetchurl {
+        url = "${codeMirror}/mode/javascript/javascript.min.js";
+        sha256 = "1462qdkm40ak0x96x0i1ngw1l3l92rc0acdl8lfpgv9aiya0alxk";
+      };
+
+      p5JS = builtins.fetchurl {
+        url = "${p5}/p5.min.js";
+        sha256 = "1fmrq3cqca4y2dvyrgzc86avjphh5rpw1mjwzx226bnfp4a8yzxv";
+      };
+
       package = { system }:
         let
           pkgs = import nixpkgs { system = system; };
+          fullSources = pkgs.stdenv.mkDerivation {
+            name = "t0-livecode-sources-${ver}";
+            src = ./.;
+            buildPhase = ''
+              mkdir -p $out
+              cp -r $src/*.go $src/*.mod $src/*.sum $out/
+              mkdir -p $out/www
+              cp ${cmCSS} $out/www/codemirror.min.css
+              cp ${cmJS} $out/www/codemirror.min.js
+              cp ${cmModeJS} $out/www/javascript.min.js
+              cp ${p5JS} $out/www/p5.min.js
+              cp -r $src/www/* $out/www/
+            '';
+          };
         in
           pkgs.buildGo120Module rec {
             name = "t0-livecode-${ver}";
             version = "${ver}";
-            src = ./.;
+            src = fullSources;
             vendorSha256 = null;
           };
     in
