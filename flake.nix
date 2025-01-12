@@ -2,7 +2,7 @@
   description = "A flake for t0-livecode, including a Nixos service module";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-23.05;
+    nixpkgs.url = github:NixOS/nixpkgs/nixos-24.05;
   };
 
   outputs = { self, nixpkgs }:
@@ -48,11 +48,11 @@
         };
 
       app = pkgs:
-        pkgs.buildGo120Module rec {
+        pkgs.buildGo123Module rec {
           name = "t0-livecode-${ver}";
           version = "${ver}";
           src = fullSources pkgs;
-          vendorSha256 = null;
+          vendorHash = null;
         };
 
       package = system:
@@ -63,6 +63,7 @@
     in
       {
         packages.x86_64-linux.default = package "x86_64-linux";
+        packages.aarch64-darwin.default = package "aarch64-darwin";
 
         nixosModules.t0-livecode-module = { config, pkgs, ... }:
           with nixpkgs.lib;
