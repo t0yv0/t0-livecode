@@ -12,6 +12,11 @@
     p5 = "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/";
     codeMirror = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7";
 
+    htmx = builtins.fetchurl {
+      url = "https://unpkg.com/browse/htmx.org@1.9.12/dist/htmx.min.js";
+      sha256 = "1i2zr35sihmfw9sp832p1bqa5m67cliwd18hwjgx4mb9mc9721qj";
+    };
+
     cmCSS = builtins.fetchurl {
       url = "${codeMirror}/codemirror.min.css";
       sha256 = "1i2zr35sihmfw9sp832p1bqa5m67cliwd18hwjgx4mb9mc9721qi";
@@ -37,15 +42,16 @@
         name = "t0-livecode-sources-${ver}";
         src = ./.;
         buildPhase = ''
-            mkdir -p $out
-            cp -r $src/*.go $src/*.mod $src/*.sum $out/
-            mkdir -p $out/www
-            cp ${cmCSS} $out/www/codemirror.min.css
-            cp ${cmJS} $out/www/codemirror.min.js
-            cp ${cmModeJS} $out/www/javascript.min.js
-            cp ${p5JS} $out/www/p5.min.js
-            cp -r $src/www/* $out/www/
-          '';
+          mkdir -p $out
+          cp -r $src/*.go $src/*.mod $src/*.sum $out/
+          mkdir -p $out/www
+          cp ${cmCSS} $out/www/codemirror.min.css
+          cp ${cmJS} $out/www/codemirror.min.js
+          cp ${cmModeJS} $out/www/javascript.min.js
+          cp ${p5JS} $out/www/p5.min.js
+          cp ${htmx} $out/www/htmx.min.js
+          cp -r $src/www/* $out/www/
+        '';
       };
 
     app = pkgs:
