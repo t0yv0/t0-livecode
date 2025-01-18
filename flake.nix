@@ -14,7 +14,7 @@
 
     htmx = builtins.fetchurl {
       url = "https://unpkg.com/browse/htmx.org@1.9.12/dist/htmx.min.js";
-      sha256 = "1i2zr35sihmfw9sp832p1bqa5m67cliwd18hwjgx4mb9mc9721qj";
+      sha256 = "1gjnqgas72l7kpr6lpqbkis5lpxbd4v2w0wn9gky57lxlfgsalan";
     };
 
     cmCSS = builtins.fetchurl {
