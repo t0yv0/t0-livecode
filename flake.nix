@@ -67,29 +67,28 @@
       with nixpkgs.lib; let
         cfg = config.services.t0-livecode;
         p = app pkgs;
-      in
-        {
-          imports = [];
-          options = {
-            services.t0-livecode = {
-              enable = mkEnableOption "t0-livecode";
-            };
+      in {
+        imports = [];
+        options = {
+          services.t0-livecode = {
+            enable = mkEnableOption "t0-livecode";
           };
-          config = mkIf cfg.enable {
-            systemd.services.t0-livecode = {
-              after = [ "network-online.target" ];
-              before = [ "multi-user.target" ];
-              wantedBy = [ "multi-user.target" ];
-              serviceConfig = {
-                DynamicUser = true;
-                # App can read this value with $STATE_DIRECTORY
-                StateDirectory = "t0-livecode-state";
-                ExecStart = "${p}/bin/t0-livecode";
-                ProtectSystem = "strict";
-                ProtectHome = true;
-              };
+        };
+        config = mkIf cfg.enable {
+          systemd.services.t0-livecode = {
+            after = [ "network-online.target" ];
+            before = [ "multi-user.target" ];
+            wantedBy = [ "multi-user.target" ];
+            serviceConfig = {
+              DynamicUser = true;
+              # App can read this value with $STATE_DIRECTORY
+              StateDirectory = "t0-livecode-state";
+              ExecStart = "${p}/bin/t0-livecode";
+              ProtectSystem = "strict";
+              ProtectHome = true;
             };
           };
         };
+      };
   };
 }
