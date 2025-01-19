@@ -10,6 +10,7 @@ import (
 
 type codeRepo interface {
 	Default() Pid
+	List() ([]Pid, error)
 	// Search(query string) []Pid
 	Store(id Pid, code string) error
 	Load(pid Pid) (string, error)
@@ -19,8 +20,35 @@ type dirStore struct {
 	dir string
 }
 
+var _ codeRepo = (*dirStore)(nil)
+
+func (i *dirStore) suffix() string {
+	return ".js"
+}
+
 func (i *dirStore) path(id Pid) string {
-	return filepath.Join(i.dir, string(id)+".js")
+	return filepath.Join(i.dir, string(id)+i.suffix())
+}
+
+func (i *dirStore) List() ([]Pid, error) {
+	var pids []Pid
+	entries, err := os.ReadDir(i.dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(e.Name(), i.suffix()) {
+			continue
+		}
+		pids = append(pids, Pid(strings.TrimSuffix(e.Name(), i.suffix())))
+	}
+	sort.Slice(pids, func(i, j int) bool {
+		return pids[i] < pids[j]
+	})
+	return pids, nil
 }
 
 func (i *dirStore) Load(id Pid) (string, error) {
@@ -51,6 +79,17 @@ func newDirStore(dir string) (*dirStore, error) {
 
 type inMemCodeStore struct {
 	codes map[Pid]string
+}
+
+func (i *inMemCodeStore) List() ([]Pid, error) {
+	var r []Pid
+	for c := range i.codes {
+		r = append(r, c)
+	}
+	sort.Slice(r, func(i, j int) bool {
+		return r[i] < r[j]
+	})
+	return r, nil
 }
 
 func (i *inMemCodeStore) Search(query string) (res []Pid) {

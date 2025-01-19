@@ -13,8 +13,9 @@
     codeMirror = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7";
 
     htmx = builtins.fetchurl {
-      url = "https://unpkg.com/browse/htmx.org@1.9.12/dist/htmx.min.js";
-      sha256 = "1gjnqgas72l7kpr6lpqbkis5lpxbd4v2w0wn9gky57lxlfgsalan";
+      name = "htmx";
+      url = "https://unpkg.com/htmx.org@2.0.4";
+      sha256 = "0ixlixv36rrfzj97g2w0q6jxbg0x1rswgvvd2vrpjm13r2jxs2g2";
     };
 
     cmCSS = builtins.fetchurl {

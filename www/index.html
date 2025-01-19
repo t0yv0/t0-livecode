@@ -6,16 +6,31 @@
     <link rel="stylesheet" href="/www/styles.css">
     <script src="/www/codemirror.min.js"></script>
     <script src="/www/javascript.min.js"></script>
+    <script src="/www/htmx.min.js"></script>
     <script src="/www/livecode.js"></script>
   </head>
   <body>
     <div class="float-container">
-      <div class="float-child" id="editor">
-      </div>
-      <div class="float-child" id="preview">
-        <iframe title="Preview" id="previewFrame"></iframe>
+      <select hx-trigger="change"
+              hx-get="/load-project"
+              hx-select=".editor"
+              hx-target=".editor"
+              hx-swap="outerHTML"
+              name="project">
+        <option value="{{.SelectedProject}}">{{.SelectedProject}}</option>
+        {{range $val := .Projects}}
+          <option value="{{$val}}">{{$val}}</option>
+        {{end}}
+      </select>
+      <button id="run" hx-trigger="click" hx-post="/run/"
+              hx-select=".preview" hx-target=".preview" hx-swap="outerHTML"
+              hx-vals="js:code:currentCode(),project:'{{.SelectedProject}}'">Run</button>
+    </div>
+    <div class="float-container">
+      <pre class="float-child editor">{{ .CurrentProgram }}</pre>
+      <div class="float-child preview">
+        <iframe title="preview" src="/program/{{ .SelectedProject }}"></iframe>
       </div>
     </div>
-    <script>livecode({{.CurrentProgram}});</script>
   </body>
 </html>

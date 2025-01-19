@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -65,9 +66,83 @@ func (s *server) pHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusOK)
-	s.indexHtml.ExecuteTemplate(w, "index.html", struct{ CurrentProgram string }{
-		CurrentProgram: string(pid),
+	pids, err := s.codeRepo.List()
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	code, err := s.codeRepo.Load(pid)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	var filteredPids []Pid
+	for _, p := range pids {
+		if pid != p {
+			filteredPids = append(filteredPids, p)
+		}
+	}
+	s.indexHtml.ExecuteTemplate(w, "index.html", index{
+		SelectedProject: pid,
+		CurrentProgram:  code,
+		Projects:        filteredPids,
 	})
+}
+
+func (s *server) runHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		s.fail(w, err)
+	}
+	code := r.Form.Get("code")
+	pid := Pid(r.Form.Get("project"))
+	if err := s.codeRepo.Store(pid, code); err != nil {
+		s.fail(w, err)
+		return
+	}
+	pids, err := s.codeRepo.List()
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	var filteredPids []Pid
+	for _, p := range pids {
+		if pid != p {
+			filteredPids = append(filteredPids, p)
+		}
+	}
+	s.indexHtml.ExecuteTemplate(w, "index.html", index{
+		SelectedProject: pid,
+		CurrentProgram:  code,
+		Projects:        filteredPids,
+	})
+}
+
+func (s *server) loadProjectHandler(w http.ResponseWriter, r *http.Request) {
+	u, err := url.Parse(r.RequestURI)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	q := u.Query()
+	pid := q.Get("project")
+	w.Header().Add("HX-Redirect", fmt.Sprintf("/p/%s", pid))
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Redirecting...")
+
+	// code, err := s.codeRepo.Load(Pid(pid))
+	// if err != nil {
+	// 	s.fail(w, err)
+	// 	return
+	// }
+	// pids, err := s.codeRepo.List()
+	// if err != nil {
+	// 	s.fail(w, err)
+	// 	return
+	// }
+	// s.indexHtml.ExecuteTemplate(w, "index.html", index{
+	// 	CurrentProgram: code,
+	// 	Projects:       pids,
+	// })
 }
 
 func (s *server) programHandler(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +245,8 @@ func main() {
 	http.HandleFunc("/www/", s.getW3)
 	http.HandleFunc("/program/", s.programHandler)
 	http.HandleFunc("/p/", s.pHandler)
+	http.HandleFunc("/load-project/", s.loadProjectHandler)
+	http.HandleFunc("/run/", s.runHandler)
 	http.HandleFunc("/", s.getRoot)
 	if err := http.ListenAndServe(":3333", nil); err != nil {
 		log.Fatal(err)
