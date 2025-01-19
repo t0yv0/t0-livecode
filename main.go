@@ -128,28 +128,11 @@ func (s *server) loadProjectHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("HX-Redirect", fmt.Sprintf("/p/%s", pid))
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Redirecting...")
-
-	// code, err := s.codeRepo.Load(Pid(pid))
-	// if err != nil {
-	// 	s.fail(w, err)
-	// 	return
-	// }
-	// pids, err := s.codeRepo.List()
-	// if err != nil {
-	// 	s.fail(w, err)
-	// 	return
-	// }
-	// s.indexHtml.ExecuteTemplate(w, "index.html", index{
-	// 	CurrentProgram: code,
-	// 	Projects:       pids,
-	// })
 }
 
 func (s *server) programHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch {
-	case r.Method == http.MethodPost:
-		err = s.programUpdate(w, r)
 	case strings.HasSuffix(r.RequestURI, ".js"):
 		err = s.programScript(w, r)
 	default:
